@@ -7,6 +7,7 @@ from typing import Any, List
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.client.sse import sse_client
 
 from .mcp_tool import MCPTool
 
@@ -31,28 +32,43 @@ class MCPClient:
         )
         if command is None:
             raise ValueError("The command must be a valid string and cannot be None.")
-
-        server_params = StdioServerParameters(
-            command=command,
-            args=self.config["args"],
-            env={**os.environ, **self.config["env"]}
-            if self.config.get("env")
-            else None,
-        )
-        try:
-            stdio_transport = await self.exit_stack.enter_async_context(
-                stdio_client(server_params)
+        if command == "sse":
+            try:
+                sse_transport = await self.exit_stack.enter_async_context(
+                    sse_client(self.config["url"])
+                )
+                read, write = sse_transport
+                session = await self.exit_stack.enter_async_context(
+                    ClientSession(read, write)
+                )
+                await session.initialize()
+                self.session = session
+            except Exception as e:
+                logging.error(f"Error initializing sse server {self.name}: {e}")
+                await self.cleanup()
+                raise
+        else:
+            server_params = StdioServerParameters(
+                command=command,
+                args=self.config["args"],
+                env={**os.environ, **self.config["env"]}
+                if self.config.get("env")
+                else None,
             )
-            read, write = stdio_transport
-            session = await self.exit_stack.enter_async_context(
-                ClientSession(read, write)
-            )
-            await session.initialize()
-            self.session = session
-        except Exception as e:
-            logging.error(f"Error initializing server {self.name}: {e}")
-            await self.cleanup()
-            raise
+            try:
+                stdio_transport = await self.exit_stack.enter_async_context(
+                    stdio_client(server_params)
+                )
+                read, write = stdio_transport
+                session = await self.exit_stack.enter_async_context(
+                    ClientSession(read, write)
+                )
+                await session.initialize()
+                self.session = session
+            except Exception as e:
+                logging.error(f"Error initializing stdio server {self.name}: {e}")
+                await self.cleanup()
+                raise
 
     async def list_tools(self) -> List[MCPTool]:
         """List available tools from the server.

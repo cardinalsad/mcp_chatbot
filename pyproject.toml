@@ -21,6 +21,7 @@ dependencies = [
     "uvicorn>=0.32.1",
     "openai>=1.66.3",
     "streamlit>=1.43.2",
+    "colorama>=0.4.6",
 ]
 
 [project.scripts]

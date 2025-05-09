@@ -1,13 +1,14 @@
 {
     "mcpServers": {
-        "markdown_processor": {
-            "command": "/path/to/your/uv/path",
+        "weather": {
+            "command": "sse",
             "args": [
                 "--directory",
-                "/path/to/your/mcp_chatbot/mcp_servers",
+                "/home/wrnd/dev/MCP-Test/mcp_chatbot/mcp_servers",
                 "run",
-                "markdown_processor.py"
-            ]
+                "weather.py"
+            ],
+            "url": "http://192.168.1.236:9091/sse"
         }
     }
 }
